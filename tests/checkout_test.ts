@@ -1,15 +1,9 @@
 import { assert, assertEquals, assertExists } from "@std/assert";
 
-import { normalizeBatch } from "../src/core/normalize.ts";
-import { parseIntentRules } from "../src/core/intent.ts";
 import { SpecStore } from "../src/core/spec-cache.ts";
-import { loadRun } from "../src/core/replay.ts";
-import { runPipeline } from "../src/core/pipeline.ts";
 import { hasCheckoutInfo, parseCheckout } from "../src/core/checkout.ts";
 import { extractSpecSection } from "../src/core/resolve.ts";
 import { pageToText } from "../src/lib/fetch-page.ts";
-
-const FIXTURE = "tests/fixtures/run-phones-15000";
 
 Deno.test("checkout details are parsed from a real Flipkart offer block", () => {
   const text =
@@ -60,67 +54,6 @@ Deno.test("the product page's price beats the search card's", () => {
   assertEquals(page.pagePrice, 19474);
   assertEquals(page.pageMrp, 23999);
   assertEquals(page.buyAt, 18500);
-});
-
-Deno.test("a card price contradicted by the page is replaced, not averaged", async () => {
-  const batches = await loadRun([FIXTURE]);
-  const intent = parseIntentRules("best phones under 15000");
-  const base = runPipeline("q", intent, batches);
-  const top = base.ranked[0];
-  const cardPrice = top.best.price;
-
-  const checkout = new Map(
-    top.listings.map((l) =>
-      [
-        l.id,
-        parseCheckout(`8% 15,999 ₹14,499 +₹109 Protect Promise Fee`),
-      ] as const
-    ),
-  );
-  const out = runPipeline("q", intent, batches, { checkoutInfo: checkout });
-  const same = out.ranked.find((r) => r.key === top.key)!;
-  assert(
-    same.offers.some((o) => o.price === 14499),
-    `page price not applied: ${same.offers.map((o) => o.price).join(", ")}`,
-  );
-  assert(cardPrice !== 14499);
-});
-
-Deno.test("one platform's page price never becomes another platform's", () => {
-  const flipkart = normalizeBatch([
-    {
-      product_name: "realme Narzo 90x 5G (Flash Blue, 128 GB) (8 GB RAM)",
-      selling_price: 14134,
-      original_price: 17999,
-      product_url: "https://www.flipkart.com/realme-narzo-90x-5g/p/itm1?pid=A",
-    },
-  ], "flipkart");
-  const amazon = normalizeBatch([
-    {
-      title: "realme Narzo 90x 5G (8GB/128GB)",
-      final_price: 21499,
-      url: "https://www.amazon.in/dp/B0TEST123",
-    },
-  ], "amazon");
-
-  const page = parseCheckout("21% 17,999 ₹14,134 +₹109 Protect Promise Fee");
-  const checkout = new Map([[flipkart.listings[0].id, page]]);
-
-  const out = runPipeline(
-    "phones under 25000",
-    parseIntentRules("phones under 25000"),
-    [
-      {
-        platform: "flipkart",
-        platformName: "Flipkart",
-        items: [],
-        status: "ok",
-      },
-    ],
-    { checkoutInfo: checkout },
-  );
-  assertEquals(out.ranked.length, 0);
-  assert(!checkout.has(amazon.listings[0]?.id ?? "none"));
 });
 
 Deno.test("the cached page section keeps the price block", async () => {

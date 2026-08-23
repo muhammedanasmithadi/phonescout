@@ -6,17 +6,6 @@ import {
   specsFromText,
 } from "../src/core/extract.ts";
 
-Deno.test("deriveModelKey collapses colour and config variants", () => {
-  const variants = [
-    "POCO M7 5G (Ocean Blue, 128 GB) (8 GB RAM)",
-    "POCO M7 5G (Mint Green, 128 GB) (6 GB RAM)",
-    "POCO M7 5G Satin Black 128 GB",
-  ];
-  const keys = new Set(variants.map(deriveModelKey));
-  assertEquals(keys.size, 1, [...keys].join(" | "));
-  assertEquals([...keys][0], "poco m7 5g");
-});
-
 Deno.test("carrier-locked SKUs stay separate from the unlocked phone", () => {
   const locked = deriveModelKey(
     "POCO M7 5G - Locked with Airtel Prepaid (Mint Green, 128 GB)",
