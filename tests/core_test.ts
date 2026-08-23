@@ -178,6 +178,40 @@ Deno.test("phone accessories are rejected even when they name a phone", () => {
   assert(c.category !== "phone", `got ${c.category}`);
 });
 
+Deno.test("keypad phones without self-describing titles still classify as featurephone", () => {
+  // Real leaks from a live run: these titles carry no "keypad"/"feature
+  // phone" words, so only the model patterns can catch them. The Moto A-
+  // and LAVA A1/Hero lineages are keypad-only; pure-digit Nokias are too.
+  const cases = [
+    "LAVA A1 Josh",
+    "MOTOROLA Moto A300 2026",
+    "LAVA Hero Shakti 2026",
+    "MOTOROLA Moto A100",
+    "Nokia 130 Music Dual Sim with Music Player, Dedicated Music Buttons",
+    "LAVA A2 Smart",
+  ];
+  for (const title of cases) {
+    assertEquals(classify(title).category, "featurephone", title);
+    assertEquals(
+      categoryMatches("phone", "featurephone"),
+      false,
+      `${title} must not survive a phone gate`,
+    );
+  }
+});
+
+Deno.test("modern lines that resemble keypad models stay phones", () => {
+  const cases = [
+    "Motorola Edge 60 Pro (Deep Sea Blue, 256 GB) (12 GB RAM)",
+    "Nokia G42 5G (So Purple, 128 GB) (6 GB RAM)",
+    "LAVA Blaze 5G (Glass Green, 128 GB) (6 GB RAM)",
+    "Motorola E13 (Cosmic Black, 64 GB) (4 GB RAM)",
+  ];
+  for (const title of cases) {
+    assertEquals(classify(title).category, "phone", title);
+  }
+});
+
 Deno.test("deriveModelKey collapses colour and config variants", () => {
   const variants = [
     "POCO M7 5G (Ocean Blue, 128 GB) (8 GB RAM)",
@@ -609,6 +643,32 @@ Deno.test("REGRESSION: a phone query never returns earphones", async () => {
       `${r.modelName} at ₹${r.best.price} exceeds budget`,
     );
   }
+});
+
+Deno.test("REGRESSION: a keypad phone never survives rankCandidates", () => {
+  const { listings } = normalizeBatch([
+    {
+      product_name: "LAVA A1 Josh",
+      selling_price: 1049,
+      product_url: "https://www.flipkart.com/lava-a1-josh/p/itm1",
+    },
+    {
+      product_name: "POCO M7 5G (Ocean Blue, 128 GB) (6 GB RAM)",
+      selling_price: 12499,
+      product_url: "https://www.flipkart.com/poco-m7-5g/p/itm2",
+    },
+  ], "flipkart");
+  const candidates = groupListings(listings.map((l) => analyze(l)));
+  const { ranked } = rankCandidates(
+    candidates,
+    parseIntentRules("phones under 15000"),
+  );
+
+  assertEquals(ranked.length, 1);
+  assert(
+    !/a1 josh/i.test(ranked[0].modelName),
+    `keypad phone in ranked output: ${ranked[0].modelName}`,
+  );
 });
 
 Deno.test("REGRESSION: the same phone does not occupy several top slots", async () => {

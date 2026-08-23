@@ -40,12 +40,20 @@ const RULES: Rule[] = [
   },
   {
     // Keypad phones match every smartphone signal a title can carry. Listed
-    // before the phone rule so a Nokia 150 never ranks as a smartphone again.
+    // before the phone rule. Titles that say so are caught by the words below;
+    // titles that do not are caught by the model patterns, because keypad
+    // lineages have distinct names: pure-digit Nokias (130, 150), the Moto
+    // A-series, and LAVA's A1/A2/A3/Hero/Shakti/Spark. Letter-suffixed or
+    // modern lines (Nokia G42, Moto E13, LAVA Blaze) never match, and the
+    // vetoes keep any title carrying "android" or "N gb ram" out entirely.
     category: "featurephone",
     strong: [
       /\bkeypad\b/i,
       /\bfeature\s*phone\b/i,
       /\b(basic|senior\s*citizen)\s*phone\b/i,
+      /\bnokia\s+\d{3}\b/i,
+      /\bmoto(?:rola)?\s+a\d{2,3}\b/i,
+      /\blava\s+(a[123]|hero|shakti|spark)\b/i,
     ],
     weak: [
       /\bmp3\s*player\b/i,
