@@ -27,6 +27,19 @@ deno task heal reliance --dry-run                         # diagnose a broken co
 deno task history                                         # price history across runs
 ```
 
+**Try it with no API keys.** The repo ships one captured run; this replays it
+fully offline — no collector credit, no spec cache, no Bright Data calls:
+
+```bash
+deno task rank "best phones under 15000" --replay examples/run-budget-15000 --specs-source cache --no-reviews
+```
+
+In cache mode the tool touches nothing off-disk: uncached models fall back to
+the knowledge base instead of fetching. The same command produced the committed
+outputs: [docs/sample-output.txt](docs/sample-output.txt) (terminal) and
+[docs/sample-output.json](docs/sample-output.json) (structured, as consumed by
+`--json`).
+
 - **Hard relevance gating** — a phone query returns phones. Category is decided
   before scoring, not patched afterwards, and the budget is enforced.
 - **Spec-aware scoring** — chipset (AnTuTu), display, battery, camera, memory
@@ -217,7 +230,13 @@ src/
     extract.ts              Specs from titles, slugs and pages, with plausibility bounds
     group.ts                Colour and storage variants -> one candidate, many offers
     resolve.ts              Fetch specs BEFORE ranking; spec DB, product pages, reviews
-    rank.ts                 Gates, spec/value/trust/deal scoring, pros, cons, badges
+    gates.ts                Hard rejection rules: category, budget, brand, must-haves, stock
+    scoring/
+      curves.ts             Spec components scored through piecewise-linear curves
+      blend.ts              Policy weights and formulas: spec/value/trust/deal, confidence
+    annotate.ts             Pros, cons, badges and verdicts, comparative within the result set
+    rank.ts                 Orchestrates gates -> scoring -> ordering; stable import surface
+    rank-types.ts           Shared option and outcome types for the ranking API
     pipeline.ts             Wires the above together
     checkout.ts             Real price at checkout, offers, stock, delivery
     reviews.ts              Ratings histogram and aspect-level sentiment
@@ -239,7 +258,20 @@ src/
   ui/
     render.ts               Ranking table, detail cards, head-to-head matrix, coverage funnel
 tests/
-  core_test.ts              Parsing, classification, grouping, scoring, regressions
+  rank_test.ts              Scoring policy: blends, badges, history effects
+  pipeline_test.ts          Fixture-driven end-to-end runs and REGRESSION cases
+  intent_test.ts            Query parsing: budgets, brands, priorities
+  classify_test.ts          Category rules on real titles
+  normalize_test.ts         Payload parsing and title recovery
+  extract_test.ts           Spec extraction from titles, slugs and pages
+  group_test.ts             Variant grouping across platforms
+  knowledge_test.ts         Chip tables, model KB integrity, spec-database parsing
+  resolve_test.ts           Spec resolution, caching, refresh pricing
+  checkout_test.ts          Checkout price and stock reading
+  reviews_test.ts           Review summarisation and polarity
+  platforms_test.ts         Per-platform URL building
+  heal_test.ts              Failure-mode classification prompts
+  ui_test.ts                Table rendering and sparklines
   golden_test.ts            Ranking invariants, gates and anchors
   llm-intent_test.ts        Optional LLM intent layer
   mock_fetch_test.ts        Transport injection
@@ -250,19 +282,21 @@ tests/
 
 ```
 User query
-  → parseQuery() detects intent (specific/category/generic)
-  → buildSearchQueries() generates search URLs
-  → scrapeProducts() runs platforms in parallel
-    → Scraper Studio: runCollector() → pollUntil() → parseCustomProducts()
-    → Pre-built: searchAmazonPreBuilt() (Amazon only)
-    → On empty results: auto-heal → re-run same collector
-  → savePrices() stores in Deno KV BEFORE dedup
-  → deduplicate() by product ID (keeps cross-platform rows + variations)
-  → compareProducts() applies category-specific scoring:
-      - Phone: RAM, storage, battery, camera, processor, 5G
-      - Headphone: ANC, battery life, driver, weight, type
-      - Earbuds: ANC, battery, driver, weight
-      - Benchmark database for known models
+  → parseIntentRules() reads category, budget, brands, priorities, must-haves
+  → searchTerm() and buildUrls() make per-platform search URLs
+  → collectRaw() triggers all platforms in parallel and polls Bright Data
+    → Scraper Studio custom collectors: Flipkart, Reliance Digital, Tata CLiQ
+    → Pre-built dataset: Amazon India
+    → On empty results: auto-heal → re-run the same collector
+  → normalizeBatch() turns raw cards into Listings, recovering titles from slugs
+  → resolveModel() fills spec gaps from the spec database and product pages
+    (the find/specs commands drive this BEFORE ranking; replay uses the cache)
+  → runPipeline() does everything offline-testable:
+    → classify() phones vs audio vs accessories vs feature phones
+    → groupListings() variants → one candidate, many offers
+    → gateCandidates() hard rules: category, price, brand, must-haves, stock
+    → rankCandidates() spec/value/trust/deal blend, availability sorts first
+  → savePrices() records observations for price history (Deno KV)
   → Recommendation + ranked comparison table
 ```
 

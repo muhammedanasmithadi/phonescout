@@ -1,0 +1,35 @@
+{
+  "query": "best phones under 15000",
+  "searchQuery": "phones under 15000",
+  "timestamp": "2026-08-21T22:54:54.682Z",
+  "platforms": [
+    {
+      "platform": "flipkart",
+      "platformName": "Flipkart",
+      "file": "flipkart.json",
+      "count": 139,
+      "status": "ok"
+    },
+    {
+      "platform": "reliance",
+      "platformName": "Reliance Digital",
+      "file": "reliance.json",
+      "count": 11,
+      "status": "ok"
+    },
+    {
+      "platform": "tatacliq",
+      "platformName": "Tata CLiQ",
+      "file": "tatacliq.json",
+      "count": 40,
+      "status": "ok"
+    },
+    {
+      "platform": "amazon",
+      "platformName": "Amazon India",
+      "file": "amazon.json",
+      "count": 117,
+      "status": "ok"
+    }
+  ]
+}

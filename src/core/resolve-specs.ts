@@ -179,6 +179,11 @@ export async function resolveSpecs(
           const cached = store.get(cacheKey);
           if (cached) {
             g = JSON.parse(cached) as ExternalSpecs;
+          } else if (mode === "cache") {
+            // Cache mode is offline by contract: a model the store never
+            // saw stays on knowledge-base data instead of reaching out.
+            result.gsmUnmatched++;
+            continue;
           } else {
             if (fetchedThisRun > 0) await sleep(opts.pace ?? 1100);
             let via: "direct" | "unlocker" = "direct";
@@ -233,6 +238,9 @@ export async function resolveSpecs(
             const mp = JSON.parse(cm) as MarketPrice;
             for (const l of c.listings) result.marketPrices.set(l.id, mp);
           }
+        } else if (mode === "cache") {
+          // Cache mode is offline by contract; skip live lookups.
+          continue;
         } else {
           if (fetchedThisRun > 0) await sleep(opts.pace ?? 1100);
           const got = await fetchBeebom(lookupName, c.brand ?? undefined);

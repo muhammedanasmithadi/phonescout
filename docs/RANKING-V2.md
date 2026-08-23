@@ -169,15 +169,18 @@ is how the ranking logic was iterated dozens of times against your existing
 
 ## Test coverage
 
-`tests/core_test.ts` — 29 tests, including three regressions pinned to the real
-captured run:
+`tests/` holds 188 tests across 14 module files, including regressions pinned to
+real captured runs:
 
 - a phone query never returns earphones,
+- a keypad phone never survives ranking, with or without a self-describing
+  title,
 - no model may occupy more than two of the top ten,
-- the winner is spec-justified rather than merely cheapest.
+- the winner is spec-justified rather than merely cheapest,
+- an out-of-stock product never leads the table.
 
 ```bash
-deno task check     # fmt + lint + type-check + 106 tests
+deno task check     # fmt + lint + type-check + 188 tests, all offline
 ```
 
 ---
