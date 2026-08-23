@@ -2,9 +2,8 @@
 
 Every command states plainly whether it spends money. Two things cost:
 
-- **collector credit** — BrightData Data Collector runs, used only by `find`
-- **Web Unlocker** — billed per request, used only when you pass
-  `--use-unlocker`
+- **collector credit**: BrightData Data Collector runs, used only by `find`
+- **Web Unlocker**: billed per request, used only when you pass `--use-unlocker`
 
 Everything else, including all spec fetching, is free by default.
 
@@ -21,7 +20,7 @@ Everything else, including all spec fetching, is free by default.
 | `doctor`                        | nothing              | Config, credentials, collector health, and the exact URLs a query would request.           |
 | `history [key]`                 | nothing              | Price history for products seen in previous runs.                                          |
 
-`find` is the only command that scrapes listings. `rank` never does — it reads
+`find` is the only command that scrapes listings. `rank` never does; it reads
 saved data, so its prices are as old as the capture.
 
 ## Shared flags
@@ -56,10 +55,10 @@ multiplies **collector credit**, so it is worth understanding before raising it.
 
 It does not mean the same thing everywhere, which is why the code scales it:
 
-| platform                      | one page is                    | measured on the reference run                                                                   |
-| ----------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------- |
-| Flipkart, Reliance, Tata CLiQ | one seed URL for the collector | `--pages 1` returned **120 cards spanning 5 result pages** — the collector paginates internally |
-| Amazon (prebuilt dataset)     | one literal page of results    | `pages_to_search: 1` returned **16 products**, of which 8 were in budget                        |
+| platform                      | one page is                    | measured on the reference run                                                                  |
+| ----------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------- |
+| Flipkart, Reliance, Tata CLiQ | one seed URL for the collector | `--pages 1` returned **120 cards spanning 5 result pages**; the collector paginates internally |
+| Amazon (prebuilt dataset)     | one literal page of results    | `pages_to_search: 1` returned **16 products**, of which 8 were in budget                       |
 
 So a naive `--pages 1` gathers a deep Flipkart catalogue and a thin Amazon one.
 Amazon's depth is therefore tripled internally, so one `--pages` value means
@@ -77,7 +76,7 @@ Measured by counting _new distinct models_ per result page in the captured run:
 | 4           | 24    | 11         | 48         |
 | 5           | 22    | 12         | 60         |
 
-The curve is flat, not decaying — the last page we see still contributes twelve
+The curve is flat, not decaying: the last page we see still contributes twelve
 models we had never encountered. **One page is a slice of the market, not the
 market.** 120 cards reduce to 60 distinct models; the rest are colour and
 storage variants.
@@ -96,7 +95,7 @@ and network requests on another. Anything limiting requests is now
 `--max-fetches`.
 
 `--use-unlocker` rather than `--allow-paid`, because the old name said neither
-which service nor what was billed — and it concealed a bug in which every
+which service nor what was billed, and it concealed a bug in which every
 spec-database lookup was routed through the paid transport even when the free
 one would have served the page.
 
@@ -126,7 +125,7 @@ deno task rank "best phones under 15000" --replay runs/<that-dir>
 ## Credentials
 
 Every task runs with `--env-file`, so `.env` in the repo root is loaded
-automatically. Deno does not read `.env` on its own — before this the file was
+automatically. Deno does not read `.env` on its own. Before this, the file was
 present and ignored, and `UNLOCKER_ZONE not set` was reported for a zone that
 was sitting in it.
 

@@ -1,7 +1,7 @@
 # phonescout
 
-> Rank phones across Indian e-commerce on measured specs, verified prices and
-> buyer trust — not on price alone.
+> Rank phones across Indian e-commerce on measured specs, verified prices, and
+> buyer trust. Not on price alone.
 
 Built for the
 [ScrapeVerse Hackathon](https://www.wemakedevs.org/hackathons/scrape-verse)
@@ -9,12 +9,10 @@ using Bright Data Scraper Studio.
 
 ## What it does
 
-**Phones, ranked properly.** This tool does one category and declines the rest —
-see [docs/RANKING-V2.md](docs/RANKING-V2.md) for why. The query is understood,
-products are classified and spec-matched, variants are grouped, and results are
-ranked on value rather than on price alone:
-
-Full flag and command reference: [docs/CLI.md](docs/CLI.md).
+**Phones, ranked properly.** This tool does one category and declines the rest;
+[docs/ENGINEERING-LOG.md](docs/ENGINEERING-LOG.md) explains why. The query is
+understood, products are classified and spec-matched, variants are grouped, and
+results are ranked on value rather than on price alone:
 
 ```bash
 deno task find "best phones under 15000"                  # live scrape + rank (spends credit)
@@ -27,8 +25,10 @@ deno task heal reliance --dry-run                         # diagnose a broken co
 deno task history                                         # price history across runs
 ```
 
+Full flag and command reference: [docs/CLI.md](docs/CLI.md).
+
 **Try it with no API keys.** The repo ships one captured run; this replays it
-fully offline — no collector credit, no spec cache, no Bright Data calls:
+fully offline. No collector credit, no spec cache, no Bright Data calls:
 
 ```bash
 deno task rank "best phones under 15000" --replay examples/run-budget-15000 --specs-source cache --no-reviews
@@ -40,45 +40,37 @@ outputs: [docs/sample-output.txt](docs/sample-output.txt) (terminal) and
 [docs/sample-output.json](docs/sample-output.json) (structured, as consumed by
 `--json`).
 
-- **Hard relevance gating** — a phone query returns phones. Category is decided
-  before scoring, not patched afterwards, and the budget is enforced.
-- **Spec-aware scoring** — chipset (AnTuTu), display, battery, camera, memory
-  and extras, weighted by what the query actually asked for.
-- **Value, not just price** — percentile of spec-points-per-rupee, so the engine
-  can recommend paying ₹2,000 more for a materially better phone.
-- **Honest confidence** — every product reports how much of its spec sheet was
-  known versus inferred; low-confidence items cannot win badges.
-- **Variant grouping** — one phone is one row, with every colour/seller/platform
-  offer attached; carrier-locked and refurbished SKUs stay separate and
-  labelled.
-- **Trustworthy ratings** — Bayesian shrinkage, so 4.9★ from 3 reviews loses to
-  4.2★ from 150,000, and inflated MRPs are flagged instead of rewarded.
-- **Replayable runs** — raw payloads are saved before analysis, so ranking can
-  be iterated endlessly without spending scraping credit.
-- **Rich terminal UI** — ranked table, per-product verdict cards with score bars
-  and pros/cons, head-to-head spec matrix, and a coverage funnel showing where
-  every scraped card went.
+### Features
 
-- **Price-aware over time** — `find` records every observation, and the ranker
-  uses it: a price at its recorded low earns a `LOWEST YET` badge, one at its
+- **Hard relevance gating**: a phone query returns phones. Category is decided
+  before scoring, not patched afterwards, and the budget is enforced.
+- **Spec-aware scoring**: chipset (AnTuTu), display, battery, camera, memory,
+  and extras, weighted by what the query actually asked for.
+- **Value, not just price**: percentile of spec-points-per-rupee, so the engine
+  can recommend paying ₹2,000 more for a materially better phone.
+- **Honest confidence**: every product reports how much of its spec sheet was
+  known versus inferred; low-confidence items cannot win badges.
+- **Variant grouping**: one phone is one row, with every colour, seller, and
+  platform offer attached. Carrier-locked and refurbished SKUs stay separate and
+  labelled.
+- **Trustworthy ratings**: Bayesian shrinkage, so 4.9★ from 3 reviews loses to
+  4.2★ from 150,000. Inflated MRPs are flagged instead of rewarded.
+- **Replayable runs**: raw payloads are saved before analysis, so ranking can be
+  iterated endlessly without spending scraping credit.
+- **Price-aware over time**: `find` records every observation, and the ranker
+  uses it. A price at its recorded low earns a `LOWEST YET` badge; one at its
   recorded high gets flagged.
-- **Diagnosis-driven self-healing** — `heal <platform>` works out _what_ broke
+- **Diagnosis-driven self-healing**: `heal <platform>` works out _what_ broke
   (crawler error, empty payload, missing fields, wrong products) from a real
   run, writes the repair prompt from that evidence, and verifies the fix.
-
-### Also included
-
-- Searches across 4 Indian e-commerce platforms: Flipkart, Amazon India,
-  Reliance Digital, Tata CLiQ (see the honesty note under Platforms)
-- Price history over time via Deno KV — recorded lows earn a `LOWEST YET` badge
-- Per-platform coverage stats and field fill rates in JSON output
-- Diagnosis-driven self-healing — `heal <platform>` works out _what_ broke from
-  a real run and verifies the fix
-
-Phones are the only rankable category, on purpose: the scoring curves, benchmark
-table and knowledge base are phone-specific. Everything else (headphones,
-laptops, accessories) is classified and filtered out so it can never pollute a
-ranking.
+- **Rich terminal UI**: ranked table, per-product verdict cards with score bars
+  and pros/cons, head-to-head spec matrix, and a coverage funnel showing where
+  every scraped card went.
+- **Four Indian platforms**: Flipkart, Amazon India, Reliance Digital, Tata CLiQ
+  (see the honesty note under Platforms).
+- **Phones only, on purpose**: the scoring curves, benchmark table, and
+  knowledge base are phone-specific. Everything else (headphones, laptops,
+  accessories) is classified and filtered out so it can never pollute a ranking.
 
 ## Install
 
@@ -144,7 +136,7 @@ To recreate the custom collectors, see [Collector Setup](#collector-setup).
 deno task find "best phones under 15000"
 deno task find "best camera phones under 50000 with OIS" --pages 2 --refresh-prices 8
 
-# Re-rank a saved run offline, free - iterate without re-spending
+# Re-rank a saved run offline, free. Iterate without re-spending.
 deno task rank "best phones under 15000" --replay runs/<run-dir>
 deno task rank "…" --replay runs/<run-dir> --specs-source cache --refresh-prices 5 --use-unlocker
 
@@ -165,7 +157,7 @@ deno task specs "best phones under 15000" --replay runs/<run-dir>
 deno task snapshot sd_xxx --platform amazon --out runs/x
 ```
 
-Full flag and command reference: [docs/CLI.md](docs/CLI.md) — the source of
+Full flag and command reference: [docs/CLI.md](docs/CLI.md), the source of
 truth. The flags that matter most on `find`:
 
 | Flag                    | What it does                                             |
@@ -193,7 +185,7 @@ truth. The flags that matter most on `find`:
 
 **What actually works today, honestly:** Flipkart and Amazon India are solid.
 Reliance Digital's hosted collector returns accessories instead of phones (the
-extraction lives in the BrightData dashboard, not this repo — `find` says so in
+extraction lives in the BrightData dashboard, not this repo; `find` says so in
 its report when it happens). Tata CLiQ works but its bot-wall defeats free
 fetches, so its spec pages arrive only via `--use-unlocker`. The tool reports
 per-platform coverage so a degraded platform is visible, not silent.
@@ -208,6 +200,13 @@ per-platform coverage so a degraded platform is visible, not silent.
 | Amazon India     | `https://www.amazon.in/s?k={q}&page={page}`                    |
 
 ## Architecture
+
+One query flows left to right: collection through Bright Data, save-first
+storage of raw payloads, an offline-testable pipeline, then ranked output.
+Because every payload is saved before analysis, any run replays offline with
+identical results.
+
+![phonescout architecture](docs/architecture.png)
 
 ```
 main.ts                     Entry point, loads .env
@@ -275,7 +274,7 @@ tests/
   golden_test.ts            Ranking invariants, gates and anchors
   llm-intent_test.ts        Optional LLM intent layer
   mock_fetch_test.ts        Transport injection
-  fixtures/                 Real captured runs and pages — see tests/fixtures/README.md
+  fixtures/                 Real captured runs and pages; see tests/fixtures/README.md
 ```
 
 ### Data flow
@@ -345,25 +344,25 @@ One ranker, two modes, decided by the query:
 
 On top of either mode:
 
-- **Trust** — Bayesian rating shrinkage: 4.9★ from 3 reviews loses to 4.2★ from
+- **Trust**: Bayesian rating shrinkage. 4.9★ from 3 reviews loses to 4.2★ from
   150,000.
-- **Corroboration gating** — a spec sheet with no buyer or knowledge-base
-  backing scores its specs at a discount and cannot win badges.
-- **Availability sorts before score** — anything you cannot buy ranks below
+- **Corroboration gating**: a spec sheet with no buyer or knowledge-base backing
+  scores its specs at a discount and cannot win badges.
+- **Availability sorts before score**: anything you cannot buy ranks below
   everything you can, however attractive its price.
-- **Honest confidence** — each row reports how much of its spec sheet was read
-  vs inferred; low-confidence items are scored down visibly.
+- **Honest confidence**: each row reports how much of its spec sheet was read vs
+  inferred; low-confidence items are scored down visibly.
 - **Inflated MRPs** (>55% off) earn no deal credit and get an asterisk.
-- **Verified prices win** — where a product page was fetched, its buy-box price
+- **Verified prices win**: where a product page was fetched, its buy-box price
   replaces the search-card quote (which often belongs to one dead seller's
   listing).
 
 ## Tech stack
 
-- [Deno](https://deno.land) v2 — runtime
-- [Cliffy](https://cliffy.io) — CLI framework (commands, tables, prompts)
-- [Deno KV](https://deno.land/kv) — embedded key-value store for price history
-- [Bright Data](https://www.brightdata.com) — web scraping infrastructure
+- [Deno](https://deno.land) v2: runtime
+- [Cliffy](https://cliffy.io): CLI framework (commands, tables, prompts)
+- [Deno KV](https://deno.land/kv): embedded key-value store for price history
+- [Bright Data](https://www.brightdata.com): web scraping infrastructure
 
 ## Collector Setup
 
@@ -380,7 +379,7 @@ The project uses custom Scraper Studio collectors:
 
 Since we use Deno (not Node/npx), collectors must be created via the REST API or
 the Bright Data dashboard. The `npx -p @brightdata/cli bdata` commands below
-require Node.js — run them manually if you need to recreate collectors.
+require Node.js, so run them manually if you need to recreate collectors.
 
 **Flipkart (Search type):**
 
