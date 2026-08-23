@@ -49,7 +49,7 @@ const VALUE_EVIDENCE_SPAN = 0.55;
 
 // Above this discount the offer is a story, not a price - the same threshold
 // the table stars with an asterisk.
-const INFLATED_MRP_PCT = 55;
+export const INFLATED_MRP_PCT = 55;
 const CREDIBLE_DISCOUNT_CAP = 40;
 
 /**

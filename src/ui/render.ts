@@ -8,6 +8,7 @@ import type {
   RankedCandidate,
 } from "../core/types.ts";
 import { formatCount } from "../core/rank.ts";
+import { INFLATED_MRP_PCT } from "../core/scoring/blend.ts";
 import { describeIntent } from "../core/intent.ts";
 
 const BAR_FULL = "█";
@@ -151,7 +152,7 @@ function priceCell(r: RankedCandidate): string {
     : colors.bold(colors.green(rupees(r.best.price)));
   if (r.best.inStock === false) return `${main}\n${colors.red("out of stock")}`;
   if (r.best.mrp && r.best.discountPct) {
-    const suspicious = r.best.discountPct > 55;
+    const suspicious = r.best.discountPct > INFLATED_MRP_PCT;
     const off = suspicious
       ? colors.dim(`${r.best.discountPct}%*`)
       : colors.cyan(`${r.best.discountPct}%`);

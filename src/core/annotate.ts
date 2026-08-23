@@ -1,6 +1,6 @@
 import type { RankedCandidate, RankIntent } from "./types.ts";
 import type { PriceHistoryEntry } from "./rank-types.ts";
-import { median } from "./scoring/blend.ts";
+import { INFLATED_MRP_PCT, median } from "./scoring/blend.ts";
 
 export function formatCount(n: number): string {
   if (n >= 100000) return `${(n / 100000).toFixed(1)}L`;
@@ -220,7 +220,7 @@ export function annotate(
         cons.push("price is still trending down — worth waiting");
       }
     }
-    if (r.best.discountPct !== null && r.best.discountPct > 55) {
+    if (r.best.discountPct !== null && r.best.discountPct > INFLATED_MRP_PCT) {
       cons.push(`${r.best.discountPct}% "discount" — inflated MRP likely`);
     }
     if (r.score.confidence < 0.5) {
