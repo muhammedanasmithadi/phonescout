@@ -1,5 +1,6 @@
 import type { PlatformId, RankedCandidate } from "./types.ts";
 import { isoNow } from "./clock.ts";
+import { defaultKv } from "../lib/kv.ts";
 
 export interface PriceObservation {
   key: string;
@@ -26,26 +27,22 @@ export interface PriceStats {
   trend: "falling" | "rising" | "stable";
 }
 
-let kvInstance: Deno.Kv | null = null;
-let kvUnavailable = false;
+/** Dependency port: inject a KV store, or omit it for the process default. */
+export interface PriceHistoryDeps {
+  kv?: Deno.Kv;
+}
 
-async function getKv(): Promise<Deno.Kv | null> {
-  if (kvUnavailable) return null;
-  if (kvInstance) return kvInstance;
-  try {
-    kvInstance = await Deno.openKv();
-    return kvInstance;
-  } catch {
-    kvUnavailable = true;
-    return null;
-  }
+function getKv(deps?: PriceHistoryDeps): Promise<Deno.Kv | null> {
+  if (deps?.kv !== undefined) return Promise.resolve(deps.kv);
+  return defaultKv();
 }
 
 export async function savePrices(
   ranked: RankedCandidate[],
   query: string,
+  deps?: PriceHistoryDeps,
 ): Promise<number> {
-  const kv = await getKv();
+  const kv = await getKv(deps);
   if (!kv) return 0;
 
   const sampledAt = isoNow();
@@ -61,19 +58,18 @@ export async function savePrices(
         query,
         timestamp: sampledAt,
       };
-      try {
-        await kv.set(["prices", c.key, offer.platform, sampledAt], obs);
-        written++;
-      } catch {
-        // ignored
-      }
+      await kv.set(["prices", c.key, offer.platform, sampledAt], obs);
+      written++;
     }
   }
   return written;
 }
 
-async function readObservations(key: string): Promise<PriceObservation[]> {
-  const kv = await getKv();
+async function readObservations(
+  key: string,
+  deps?: PriceHistoryDeps,
+): Promise<PriceObservation[]> {
+  const kv = await getKv(deps);
   if (!kv) return [];
   const out: PriceObservation[] = [];
   for await (
@@ -120,8 +116,11 @@ function summarise(key: string, obs: PriceObservation[]): PriceStats | null {
   };
 }
 
-export async function getStats(key: string): Promise<PriceStats | null> {
-  return summarise(key, await readObservations(key));
+export async function getStats(
+  key: string,
+  deps?: PriceHistoryDeps,
+): Promise<PriceStats | null> {
+  return summarise(key, await readObservations(key, deps));
 }
 
 export interface PricePoint {
@@ -130,8 +129,12 @@ export interface PricePoint {
 }
 
 /** The observation series for one product, oldest first, capped. */
-export async function getSeries(key: string, cap = 24): Promise<PricePoint[]> {
-  const obs = await readObservations(key);
+export async function getSeries(
+  key: string,
+  cap = 24,
+  deps?: PriceHistoryDeps,
+): Promise<PricePoint[]> {
+  const obs = await readObservations(key, deps);
   const tail = obs.slice(-cap);
   // One point per run: the cheapest offer seen at that moment.
   const byRun = new Map<string, number>();
@@ -146,17 +149,21 @@ export async function getSeries(key: string, cap = 24): Promise<PricePoint[]> {
 
 export async function getStatsFor(
   keys: string[],
+  deps?: PriceHistoryDeps,
 ): Promise<Map<string, PriceStats>> {
   const out = new Map<string, PriceStats>();
   for (const key of keys) {
-    const stats = await getStats(key);
+    const stats = await getStats(key, deps);
     if (stats) out.set(key, stats);
   }
   return out;
 }
 
-export async function listTracked(limit = 50): Promise<PriceStats[]> {
-  const kv = await getKv();
+export async function listTracked(
+  limit = 50,
+  deps?: PriceHistoryDeps,
+): Promise<PriceStats[]> {
+  const kv = await getKv(deps);
   if (!kv) return [];
 
   const byKey = new Map<string, PriceObservation[]>();
@@ -176,6 +183,6 @@ export async function listTracked(limit = 50): Promise<PriceStats[]> {
     .slice(0, limit);
 }
 
-export async function isAvailable(): Promise<boolean> {
-  return (await getKv()) !== null;
+export async function isAvailable(deps?: PriceHistoryDeps): Promise<boolean> {
+  return (await getKv(deps)) !== null;
 }

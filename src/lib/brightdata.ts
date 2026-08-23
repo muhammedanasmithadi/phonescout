@@ -23,6 +23,24 @@ function authHeaders(): Record<string, string> {
   };
 }
 
+/**
+ * Parses newline-delimited JSON, skipping blank lines. Returns only the
+ * lines that parsed; callers that need to know about damaged lines should
+ * compare against the non-blank line count.
+ */
+export function parseJsonLines(text: string): unknown[] {
+  const parsed: unknown[] = [];
+  for (const line of text.split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      parsed.push(JSON.parse(line));
+    } catch {
+      // A malformed line is skipped; NDJSON streams are read as a whole.
+    }
+  }
+  return parsed;
+}
+
 export async function bdFetch<T = unknown>(
   path: string,
   options: RequestInit = {},
@@ -43,18 +61,8 @@ export async function bdFetch<T = unknown>(
   try {
     return JSON.parse(text) as T;
   } catch {
-    const lines = text.split("\n").filter((l) => l.trim());
-    if (lines.length > 0) {
-      const parsed: unknown[] = [];
-      for (const line of lines) {
-        try {
-          parsed.push(JSON.parse(line));
-        } catch {
-          // ignored
-        }
-      }
-      if (parsed.length > 0) return parsed as T;
-    }
+    const parsed = parseJsonLines(text);
+    if (parsed.length > 0) return parsed as T;
     throw new Error("Empty response from Bright Data API");
   }
 }

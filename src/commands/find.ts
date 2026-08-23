@@ -248,7 +248,10 @@ export const findCommand = new Command()
             ),
           );
         }
-      } catch { /* ignored */ }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(colors.dim(`  price history not recorded: ${msg}`));
+      }
     }
 
     if (options.refreshPrices && options.refreshPrices > 0) {
