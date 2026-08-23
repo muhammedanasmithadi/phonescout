@@ -187,10 +187,8 @@ export function rankTable(ranked: RankedCandidate[], limit: number): string {
       colors.bold("Where"),
     ])
     .body(
-      shown(ranked, limit).map((r) => [
-        r.rank === 1
-          ? colors.green(colors.bold("1"))
-          : colors.dim(String(r.rank)),
+      shown(ranked, limit).map(({ r, n }) => [
+        n === 1 ? colors.green(colors.bold("1")) : colors.dim(String(n)),
         nameCell(r, nameWidth),
         priceCell(r),
         colors.dim(specSummary(r)),
@@ -270,9 +268,9 @@ export function detailCards(
   history?: HistoryView,
 ): string {
   const out: string[] = [];
-  for (const r of shown(ranked, count)) {
+  for (const { r, n } of shown(ranked, count)) {
     out.push("");
-    out.push(rule(`#${r.rank}  ${r.modelName}`));
+    out.push(rule(`#${n}  ${r.modelName}`));
     out.push("");
     if (r.badges.length) {
       out.push(`  ${r.badges.map(badgeChip).join(" ")}`);
@@ -613,12 +611,19 @@ function sortNote(ranked: RankedCandidate[]): string {
   );
 }
 
-/** The table shows one row per phone, not one per storage configuration. */
+/**
+ * The table shows one row per phone, not one per storage configuration.
+ * Variant rows keep their internal rank for ordering, but the reader counts
+ * visible rows - so callers number what they display.
+ */
 function shown(
   ranked: RankedCandidate[],
   limit: number,
-): RankedCandidate[] {
-  return ranked.filter((r) => !r.variantOf).slice(0, limit);
+): Array<{ r: RankedCandidate; n: number }> {
+  return ranked
+    .filter((r) => !r.variantOf)
+    .slice(0, limit)
+    .map((r, i) => ({ r, n: i + 1 }));
 }
 
 export function renderFull(
@@ -650,7 +655,7 @@ export function renderFull(
   }
   parts.push(
     colors.dim(
-      `\n  Scores are 0–100 and relative to this result set. "conf" is data confidence:\n  low values mean specs were inferred rather than read. * marks a discount whose MRP looks inflated.`,
+      `\n  Scores are 0–100 and relative to this result set. "conf" is data confidence:\n  low values mean specs were inferred rather than read. * marks a discount whose MRP looks inflated.\n  Rows number one per phone: a model's other configs appear under "Other configs".`,
     ),
   );
 
